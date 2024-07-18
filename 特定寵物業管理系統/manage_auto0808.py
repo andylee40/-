@@ -31,14 +31,16 @@ def Scrapy():
     options = Options()
     options.add_argument("--disable-notifications")
     options.headless = True
+    
+    url="https://www.pet.gov.tw/Web/BusinessList.aspx?PG={}".format(page)
+    driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"),options=options)
+    driver.get(url)
+    driver.find_elements(By.XPATH,"//*[@id='js-scroll-here']/div[2]/a[1]")[0].click()
+    pages=WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME,"tableCount")))
+    maxpage=int(''.join([x for x in pages.text.split('/')[1] if x.isdigit()]))
     #開始爬蟲
     while True:
         print("目前頁數：",page)
-        url="https://paim.coa.gov.tw/Web/BusinessList.aspx?PG={}".format(page)
-        driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"),options=options)
-        driver.get(url)
-        pages=WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME,"tableCount")))
-        maxpage=int(''.join([x for x in pages.text.split('/')[1] if x.isdigit()]))
         table_data = driver.find_elements(By.XPATH,"//table[@id]/tbody/tr")
         for row in table_data:
             columns = row.find_elements(By.XPATH,"./td") # Use dot in the xpath to find elements with in element.
@@ -47,8 +49,16 @@ def Scrapy():
                 table_row.append(column.text)
             #print(table_row)
             data.append(table_row)
+
         if page < maxpage:
-            page+=1
+            try:
+                page+=1
+                driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                time.sleep(5)
+                driver.find_elements(By.XPATH,"//*[@id='enrf-pagination']/ul/li[10]/a")[0].click()
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH,"//table[@id]/tbody/tr")))
+            except:
+                pass
         else:
             break
     driver.close()
@@ -73,7 +83,8 @@ def Clear():
     dfold=pd.read_csv(oldfile,dtype='object',keep_default_na=False)
     dfold1=dfold[dfold['移除時間']==''].reset_index(drop=True)
     
-    df3= dfold1.append(df2)
+#     df3= dfold1.append(df2)
+    df3=pd.concat([dfold1,df2],ignore_index=True).reset_index(drop=True)
     diffrent = df3.drop_duplicates(subset=['所屬縣市', '特定寵物業許可證號', '營業場所名稱', '經營業務項目', '特定寵物種類', '評鑑等級', '營業狀態','有效日期'],keep=False)
     
     check=diffrent['營業場所名稱'].values
@@ -89,13 +100,15 @@ def Clear():
     insert['新增時間'] = insert['新增時間'].replace('',(datetime.now().strftime("%Y%m%d")))
     
     
-    change=delete.append(insert)
+#     change=delete.append(insert)
+    change=pd.concat([delete,insert],ignore_index=True).reset_index(drop=True)
     checkold=change['營業場所名稱'].values
     
     #從舊資料刪除刪減資料集
     #print(np.where(df["營業場所名稱"].isin(check)))
     dfold=dfold.drop(dfold.index[np.where(dfold["營業場所名稱"].isin(checkold))])
-    dfold=dfold.append(change).reset_index(drop=True)
+#     dfold=dfold.append(change).reset_index(drop=True)
+    dfold=pd.concat([dfold,change],ignore_index=True).reset_index(drop=True)
     print("異動資料共:"+str(len(change))+"筆")
     print("最新資料共:"+str(len(dfold[dfold['移除時間']=='']))+"筆")
     
@@ -105,7 +118,7 @@ def Clear():
 def Insert():
     newst='/var/www/html/hong_pet/寵物業管理系統/manage_day/manage_'+(datetime.now().strftime("%Y%m%d"))+'_1.csv'
     #連線資料庫
-    connection= pymysql.connect(user='帳號',password='密碼',host='localhost',database='pet',local_infile=1)
+    connection= pymysql.connect(user='',password='',host='',database='',local_infile=1)
     #清空資料庫
     cursor = connection.cursor()
     query1="TRUNCATE TABLE pet_manage"
@@ -130,10 +143,10 @@ def Insert():
     connection.close()
 
 def Insert2():
-    hostname="localhost"
-    dbname="pet"
-    uname="帳號"
-    pwd="密碼"
+    hostname=""
+    dbname=""
+    uname=""
+    pwd=""
     #Create SQLAlchemy engine to connect to MySQL Database
     engine = create_engine("mysql+pymysql://{user}:{pw}@{host}/{db}?charset=utf8".format(host=hostname, db=dbname, user=uname, pw=pwd))
     df_day=df.drop_duplicates(keep='first')

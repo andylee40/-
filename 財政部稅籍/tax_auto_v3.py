@@ -58,11 +58,11 @@ def Reset(df):
     df['新增時間']=''
     df['移除時間']=''
     for i in range(0,len(df)):
-        if df.iloc[i,9].find("寵物") == 0:
+        if df.iloc[i,9].find("寵物") != -1:
             df.iloc[i,17]=df.iloc[i,9]
-        elif df.iloc[i,11].find("寵物") == 0:
+        elif df.iloc[i,11].find("寵物") != -1:
             df.iloc[i,17]=df.iloc[i,11]
-        elif df.iloc[i,13].find("寵物") == 0:
+        elif df.iloc[i,13].find("寵物") != -1:
             df.iloc[i,17]=df.iloc[i,13]
         else:
             df.iloc[i,17]=df.iloc[i,15]
@@ -88,8 +88,12 @@ def Different():
     df1_1=Reset(df1)
     df2_1=Reset(df2)
     
+    df1_1=df1_1.replace('其他殯葬及寵物生命紀念相關服務','寵物殯葬')
+    df2_1=df2_1.replace('其他殯葬及寵物生命紀念相關服務','寵物殯葬')
+    
     #2天相異資料紀錄
-    df3= df1_1.append(df2_1)
+#     df3= df1_1.append(df2_1)
+    df3=pd.concat([df1_1,df2_1],ignore_index=True).reset_index(drop=True)
     diffrent = df3.drop_duplicates(subset=['營業人名稱','類別'],keep=False)
     check=diffrent['營業人名稱'].values
     
@@ -104,24 +108,25 @@ def Different():
     insert['新增時間'] = insert['新增時間'].replace('',(datetime.now().strftime("%Y-%m-%d")))
     
     #異動資料數量
-    change=delete.append(insert)
+#     change=delete.append(insert)
+    change=pd.concat([delete,insert],ignore_index=True).reset_index(drop=True)
     
     
      #另一個資料庫的資料
     dftable=df2_1['類別'].value_counts(dropna=False).reset_index()
-    #整理成每日資料
-    dftable=dftable.rename(columns={"index":"category","類別":"number"})
+#     #整理成每日資料
+#     dftable=dftable.rename(columns={"index":"日期","類別":"number"})
     #data_dict = df2.to_dict(orient='records')
     dftable['日期']=datetime.now().strftime("%Y%m%d")
-    table = dftable.pivot_table(values='number', index='日期', columns='category')
+    table = dftable.pivot_table(values='count', index='日期', columns='類別')
     table=table[['寵物批發','寵物服裝及其飾品配件批發','寵物殯葬','寵物照顧及訓練','寵物用品批發','寵物用品零售','寵物零售','寵物飼品零售']].reset_index()
     print('資料處理完成')
     
 def Insert():
-    hostname="localhost"
-    dbname="pet"
-    uname="帳號"
-    pwd="密碼"
+    hostname=""
+    dbname=""
+    uname=""
+    pwd=""
     #Create SQLAlchemy engine to connect to MySQL Database
     engine = create_engine("mysql+pymysql://{user}:{pw}@{host}/{db}?charset=utf8".format(host=hostname, db=dbname, user=uname, pw=pwd))
     
