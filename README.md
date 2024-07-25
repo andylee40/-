@@ -42,11 +42,11 @@ http://203.145.215.249/hong_pet/home.php
 <br>
 
 2. 寵物食品申報網 （https://petfood.moa.gov.tw/Web/Food）
-![](https://hackmd.io/_uploads/BJWo_uJYR.png)
+![](https://imgur.com/kThNjXc.png)
 <br>
 
 3. 特定寵物業管理系統 （https://www.pet.gov.tw/Web/BusinessList.aspx）
-![](https://hackmd.io/_uploads/H1uXud1KA.png)
+![](https://imgur.com/VIXMIPy.png)
 
 
 
